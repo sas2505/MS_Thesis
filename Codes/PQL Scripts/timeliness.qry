@@ -1,0 +1,23 @@
+#PARSER PQL
+
+#DEFINE window_size 10000
+#DEFINE volatility 3000
+
+#ADDQUERY
+
+/// Apply a tumbling window of defined size
+windowedData = ELEMENTWINDOW({
+    size = ${window_size},     
+    slide = ${window_size}
+}, source)
+
+currencyData = MAP({
+    expressions = [
+        ['max((1-(available_time - timestamp)/${volatility}), 0)', 'timeliness']
+    ],
+    keepInput = 'true'
+}, windowedData)
+
+timeliness = AGGREGATE({
+	aggregations = [['AVG', 'timeliness', 'timeliness']]
+}, currencyData)
