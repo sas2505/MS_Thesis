@@ -1,0 +1,25 @@
+#PARSER PQL
+
+#DEFINE file_path 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Smart-Home\\processed\\individual_sensor\\2020-02-27\\sensor_6223_processed.csv'
+
+#RUNQUERY
+source ::= ACCESS({
+    source = 'sensor_source',
+    wrapper = 'GenericPull',
+    transport = 'File',
+    protocol = 'CSV',
+    datahandler = 'Tuple',
+    options = [
+		['filename', ${file_path}],
+        ['separator', ','],
+        ['scheduler.delay', '1'],
+        ['skipFirstLines','1']
+    ],
+    schema = [
+        ['value_id', 'Integer'],
+        ['sensor_id', 'Integer'],
+        ['timestamp', 'Timestamp'],
+        ['value', 'Double'],
+        ['available_time', 'Timestamp']
+    ]
+})
