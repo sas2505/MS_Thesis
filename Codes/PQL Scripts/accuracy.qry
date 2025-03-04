@@ -1,0 +1,70 @@
+#PARSER PQL
+
+#DEFINE window_size 10000
+
+
+#ADDQUERY
+
+windowedData = ELEMENTWINDOW({
+    size = ${window_size}, 
+    slide = ${window_size}
+}, source)
+
+filteredData = SELECT({ PREDICATE='!isNull(value)'
+	}, windowedData)
+
+medians = AGGREGATE({
+    aggregations = [
+        ['MEDIAN', 'value', 'median']
+    ]
+}, filteredData)
+
+modifiedData = JOIN({PREDICATE='true'},
+	filteredData, medians
+)
+
+absoluteDeviations = MAP({
+    expressions = [
+        ['abs(value - median)', 'absolute_deviation']
+    ],
+    keepInput = 'true'
+}, modifiedData)
+
+madValues = AGGREGATE({
+    aggregations = [
+        ['MEDIAN', 'absolute_deviation', 'mad']
+    ]
+}, absoluteDeviations)
+
+thresholdValues = MAP({
+    expressions = [
+        ['3 * mad * 1.4826', 'threshold']
+    ],
+    keepInput = 'true' /// remove this
+}, madValues)
+
+finalData = JOIN({PREDICATE='true'}, 
+	absoluteDeviations, thresholdValues
+)
+
+correctData = SELECT({ PREDICATE='absolute_deviation <= threshold'
+	}, finalData)
+	
+vt = AGGREGATE({
+    aggregations = [
+        ['COUNT', 'value', 'vt'],
+        ['FIRST', 'value_id', 'first'],
+        ['LAST', 'value_id', 'last'],
+        ['FIRST', 'median', 'median'],
+        ['FIRST', 'mad', 'mad'],
+        ['FIRST', 'threshold', 'threshold']
+    ]
+}, correctData)
+
+accuracy = MAP({
+	expressions =[
+		['1 - (${window_size} - vt) / ${window_size}', 'accuracy'],
+		['${window_size} - vt', 'V_T']
+	],
+    keepInput = 'true'
+}, vt)
