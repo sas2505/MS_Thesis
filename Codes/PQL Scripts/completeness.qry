@@ -1,0 +1,31 @@
+#PARSER PQL
+
+#DEFINE window_size 10000
+
+#ADDQUERY
+
+/// Apply a tumbling window of defined size
+windowedData = ELEMENTWINDOW({
+    size = ${window_size},     
+    slide = ${window_size}
+}, source)
+
+/// Select tuples where any attribute is NULL (incomplete tuples)
+incompleteTuples = SELECT({
+    predicate = 'isNull(value) || isNull(sensor_id) || isNull(value_id)'
+}, windowedData)
+
+/// Count tuples with missing values
+N_M = AGGREGATE({
+    aggregations = [
+        ['COUNT', '*', 'N_M']
+    ]
+}, incompleteTuples)
+
+/// calculate completeness
+completeness = MAP({
+	expressions =[
+		['1 - N_M / ${window_size}', 'completeness'],
+		['N_M', 'N_M']
+	]
+}, N_M)
