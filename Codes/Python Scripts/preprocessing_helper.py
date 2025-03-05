@@ -21,6 +21,15 @@ def _get_sensor_id_from_filename(filename):
     """
     return os.path.basename(filename)[7:11]
 
+
+def split_sensors():
+    """ Split original input datasets into separate files for each sensor """
+    dataset_1 = BASE_DIRECTORY + "/Smart-Home/human_activity_raw_sensor_data/sensor_sample_int.csv"
+    dataset_2 = BASE_DIRECTORY + "/Smart-Home/human_activity_raw_sensor_data/sensor_sample_float.csv"
+    split_sensors_by_file(dataset_1)
+    split_sensors_by_file(dataset_2)
+
+
 def split_sensors_by_file(input_file):
     """
     Reads a large dataset in chunks and splits data for each sensor into separate files.
@@ -54,7 +63,6 @@ def split_sensors_by_file(input_file):
                 sensor_files[sensor_id] = True
 
     print(f"✅ Data successfully split into sensor-specific files in: {output_dir}")
-
 
 
 def extract_first_no_of_days(sensor_file, no_of_days):
@@ -166,7 +174,7 @@ def convert_datetime_to_timestamp(input_file):
     # Define output file
     output_dir = BASE_DIRECTORY + "/Processed"
     os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
-    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_processed.csv"
+    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_temp_1.csv"
     output_file = os.path.join(output_dir, new_filename)
 
     # Read the file in chunks to avoid memory issues
@@ -226,7 +234,7 @@ def add_inaccuracy(input_file, deviation=0.05, outlier_percentage=0.02, outlier_
     # Define output file
     output_dir = os.path.join(BASE_DIRECTORY, "Processed")
     os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
-    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_modified.csv"
+    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_temp_2.csv"
     output_file = os.path.join(output_dir, new_filename)
 
     # Process the file in chunks
@@ -243,4 +251,97 @@ def add_inaccuracy(input_file, deviation=0.05, outlier_percentage=0.02, outlier_
     print(f"🎉 Processing complete! Output saved at: {output_file}")
 
 
+def add_missing_values(input_file, missing_percentage=0.05):
+    """
+    Introduces missing values in the 'value' column of sensor data files.
+    :param input_file: Path to the sensor CSV file.
+    :param missing_percentage: The percentage of missing values to introduce (default:  0.05).
+    """
+    print(f"🚀 Introducing {input_file} with {missing_percentage*100:.2f}% missing values...")
+    # Define output file
+    output_dir = BASE_DIRECTORY + "/Processed"
+    os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
+    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_temp_3.csv"
+    output_file = os.path.join(output_dir, new_filename)
 
+    first_chunk = True  # To handle writing headers
+
+    # Read file in chunks
+    with pd.read_csv(input_file, chunksize=chunk_size, dtype=str) as reader:
+        for chunk in reader:
+            # Calculate exact number of missing values for this chunk
+            num_missing = int(missing_percentage * len(chunk))
+
+            if num_missing > 0:
+                # Select `num_missing` unique indices randomly
+                missing_indices = np.random.choice(chunk.index, size=num_missing, replace=False)
+
+                # Assign missing values
+                chunk.loc[missing_indices, "value"] = ''
+
+            # Append to output file (write header only for the first chunk)
+            chunk.to_csv(output_file, mode="a", header=first_chunk, index=False)
+            first_chunk = False  # Ensure header is only written once
+
+            print(f"✅ Processed {len(chunk)} rows, introduced {num_missing} missing values.")
+
+
+    print(f"🎉 Processing complete! Output saved at: {output_file}")
+
+
+def add_time_of_availability(input_file, validity_period=5000, outdated_percentage=0.1):
+    """
+    Adds an 'available_time' column to a large sensor dataset, simulating data arrival time.
+    
+    :param input_file: Path to the input CSV file.
+    :param validity_period: Time period within which data is expected to be valid.
+    :param outdated_percentage: Percentage of records that will be marked as outdated.
+    """
+    print(f"🚀 Adding maximum validity_period={validity_period} milliseconds and {outdated_percentage:.2%} outdated values")
+
+    # Define output file
+    output_dir = os.path.join(BASE_DIRECTORY, "Processed")
+    os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
+    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_final.csv"
+    output_file = os.path.join(output_dir, new_filename)
+
+    first_chunk = True  # Handle header writing
+
+    # Read file in chunks
+    with pd.read_csv(input_file, chunksize=chunk_size, dtype=str) as reader:
+        for chunk in reader:
+            # Convert timestamp to integer
+            chunk["timestamp"] = chunk["timestamp"].astype(int)
+
+            # Generate available_time based on timestamp + a random offset within validity_period
+            chunk["available_time"] = chunk["timestamp"] + np.random.randint(0, validity_period, size=len(chunk))
+
+            # Introduce outdated records (available_time > timestamp + validity_period)
+            num_outdated = int(len(chunk) * outdated_percentage)
+            if num_outdated > 0:
+                outdated_indices = np.random.choice(chunk.index, size=num_outdated, replace=False)
+                chunk.loc[outdated_indices, "available_time"] += np.random.randint(validity_period, validity_period * 2, size=num_outdated)
+
+            # Save the modified chunk
+            chunk.to_csv(output_file, mode="a", index=False, header=first_chunk)
+            first_chunk = False  # Ensure header is only written once
+
+            print(f"✅ Processed {len(chunk)} rows, added {num_outdated} outdated records.")
+
+    print(f"🎉 Processing complete! Output saved as {output_file}")
+
+
+def clean_temp_files(sensor_id):
+    """
+    Deletes temporary files created during preprocessing.
+    """
+    file_list = [
+        BASE_DIRECTORY+ f'/Processed/sensor_{sensor_id}_temp_1.csv',
+        BASE_DIRECTORY+ f'/Processed/sensor_{sensor_id}_temp_2.csv',
+        BASE_DIRECTORY+ f'/Processed/sensor_{sensor_id}_temp_3.csv'
+    ]
+
+    for file in file_list:
+        if os.path.exists(file):
+            os.remove(file)
+            print(f"🗑️ Deleted: {file}")
