@@ -5,10 +5,21 @@ This module provides helper functions for preprocess.py to preprocess the raw se
 '''
 import os
 import pandas as pd
+import numpy as np
+import math
+
 
 BASE_DIRECTORY = "E:/Personal_Drive_Backup/My Important Files/Study/Uni-Bamberg/Thesis/Odysseus/Benchmarking/Dataset"
 chunk_size = 50000
 
+def _get_sensor_id_from_filename(filename):
+    """
+    Extracts the sensor ID from a given filename.
+    
+    :param filename: Name of the sensor file.
+    :return: The sensor ID extracted from the filename.
+    """
+    return os.path.basename(filename)[7:11]
 
 def split_sensors_by_file(input_file):
     """
@@ -56,9 +67,8 @@ def extract_first_no_of_days(sensor_file, no_of_days):
     # Define output file
     output_dir = BASE_DIRECTORY + "/Processed"
     os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
-    original_filename = os.path.basename(sensor_file) 
-    sensor_id = original_filename.replace(".csv", "")  
-    new_filename = f"{sensor_id}_{no_of_days}_days.csv"
+    sensor_id = _get_sensor_id_from_filename(sensor_file) 
+    new_filename = f"sensor_{sensor_id}_{no_of_days}_days.csv"
     output_file = os.path.join(output_dir, new_filename)
 
     # Initialize variables
@@ -152,22 +162,25 @@ def convert_datetime_to_timestamp(input_file):
     :param input_file: Path to the sensor CSV file.
     """
     print(f"🚀 Converting 'timestamp' to Unix timestamp in {input_file}...")
+
     # Define output file
     output_dir = BASE_DIRECTORY + "/Processed"
     os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
-    output_file = os.path.join(output_dir, os.path.basename(input_file))
-    original_filename = os.path.basename(input_file) 
-    root_name = original_filename[:11]
-    new_filename = f"{root_name}_processed.csv"
+    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_processed.csv"
     output_file = os.path.join(output_dir, new_filename)
 
     # Read the file in chunks to avoid memory issues
+    first_chunk = True  # Track if it's the first chunk
+
     with pd.read_csv(input_file, chunksize=chunk_size, dtype=str) as reader:
         for chunk in reader:
             # Convert timestamp column to Unix timestamp
             chunk["timestamp"] = pd.to_datetime(chunk["timestamp"], errors="coerce").astype(int) // 10**6
 
-            # Append data
-            chunk.to_csv(output_file, mode="a", index=False, header=False)
+            # Append data with header only for the first chunk
+            chunk.to_csv(output_file, mode="a", index=False, header=first_chunk)
+            first_chunk = False  # Ensure subsequent chunks don't write the header
 
     print(f"✅ 'timestamp' column converted to Unix timestamp in {output_file}")
+
+
