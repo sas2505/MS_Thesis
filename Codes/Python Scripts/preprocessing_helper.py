@@ -143,3 +143,31 @@ def check_consistency(sensor_file):
         print(f"✅ {os.path.basename(sensor_file)} is **fully consistent** ✅")
     else:
         print(f"⚠️ {os.path.basename(sensor_file)} has {inconsistent_rows} inconsistencies ⚠️")
+
+
+def convert_datetime_to_timestamp(input_file):
+    """
+    Converts the 'timestamp' column to Unix timestamp format.
+    
+    :param input_file: Path to the sensor CSV file.
+    """
+    print(f"🚀 Converting 'timestamp' to Unix timestamp in {input_file}...")
+    # Define output file
+    output_dir = BASE_DIRECTORY + "/Processed"
+    os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
+    output_file = os.path.join(output_dir, os.path.basename(input_file))
+    original_filename = os.path.basename(input_file) 
+    root_name = original_filename[:11]
+    new_filename = f"{root_name}_processed.csv"
+    output_file = os.path.join(output_dir, new_filename)
+
+    # Read the file in chunks to avoid memory issues
+    with pd.read_csv(input_file, chunksize=chunk_size, dtype=str) as reader:
+        for chunk in reader:
+            # Convert timestamp column to Unix timestamp
+            chunk["timestamp"] = pd.to_datetime(chunk["timestamp"], errors="coerce").astype(int) // 10**6
+
+            # Append data
+            chunk.to_csv(output_file, mode="a", index=False, header=False)
+
+    print(f"✅ 'timestamp' column converted to Unix timestamp in {output_file}")
