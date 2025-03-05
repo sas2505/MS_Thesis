@@ -184,3 +184,63 @@ def convert_datetime_to_timestamp(input_file):
     print(f"✅ 'timestamp' column converted to Unix timestamp in {output_file}")
 
 
+def add_inaccuracy(input_file, deviation=0.05, outlier_percentage=0.02, outlier_factor=3):
+    """ 
+    Adds inaccuracy to large sensor data files by introducing noise and outliers in chunks.
+    
+    :param input_file: Path to the sensor CSV file.
+    :param deviation: The standard deviation of the Gaussian noise to add (default: 0.05).
+    :param outlier_percentage: The percentage of outliers to introduce (default: 0.02).
+    :param outlier_factor: The factor by which to multiply outliers (default: 3).
+    :param chunk_size: Number of rows to process per chunk (default: 500,000).
+    """
+    def _process_chunk(data):
+        """ Adds Gaussian noise and outliers while preserving original data type and precision. """
+        data = data.astype(float)  # Ensure numeric processing
+        
+        # Detect if original data was int
+        is_int = np.all(data % 1 == 0)  
+
+        # Compute noise (ensuring no negative values)
+        noise_sigma = np.maximum(data * deviation, 1e-6)
+        noisy_data = data + np.random.normal(0, noise_sigma)
+
+        # Introduce outliers
+        num_outliers = int(outlier_percentage * len(noisy_data))
+        if num_outliers > 0:
+            outlier_indices = np.random.choice(noisy_data.index, size=num_outliers, replace=False)
+            random_signs = np.random.choice([1, -1], size=num_outliers)
+            noisy_data.loc[outlier_indices] *= (random_signs * outlier_factor)
+
+        if is_int:
+            return noisy_data.round().astype(int)  # Convert back to int if original was int
+        else:
+            # Preserve decimal places dynamically
+            decimal_places = data.astype(str).str.split('.').str[-1].str.len().max()
+            return noisy_data.round(decimal_places)  # Convert back to rounded float
+
+    print(f"🚀 Introducing inaccuracy in {input_file} ...")
+
+    column = 'value'
+
+    # Define output file
+    output_dir = os.path.join(BASE_DIRECTORY, "Processed")
+    os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
+    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_modified.csv"
+    output_file = os.path.join(output_dir, new_filename)
+
+    # Process the file in chunks
+    first_chunk = True  # To handle writing headers
+    with pd.read_csv(input_file, chunksize=chunk_size, dtype=str) as reader:
+        for chunk in reader:
+            chunk[column] = _process_chunk(chunk[column])
+            # Append to output file (first chunk writes headers, others do not)
+            chunk.to_csv(output_file, mode="a", index=False, header=first_chunk)
+            first_chunk = False  # Ensure header is only written once
+
+            print(f"✅ Processed {len(chunk)} rows...")
+
+    print(f"🎉 Processing complete! Output saved at: {output_file}")
+
+
+
