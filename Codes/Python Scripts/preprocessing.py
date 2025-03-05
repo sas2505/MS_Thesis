@@ -5,28 +5,40 @@ import preprocessing_helper as ph
 from preprocessing_helper import BASE_DIRECTORY
 
 
-
-def split_sensors():
-    """ Split original input datasets into separate files for each sensor """
-    dataset_1 = BASE_DIRECTORY + "/Smart-Home/human_activity_raw_sensor_data/sensor_sample_int.csv"
-    dataset_2 = BASE_DIRECTORY + "/Smart-Home/human_activity_raw_sensor_data/sensor_sample_float.csv"
-    ph.split_sensors_by_file(dataset_1)
-    ph.split_sensors_by_file(dataset_2)
-
-def extract_first_n_days(sensor_id, no_of_days):
-    """
-    Extracts the first N days of data from a sensor file and saves to a new file.
-    """
-    ph.extract_first_no_of_days(
-        sensor_file = BASE_DIRECTORY+ f'/Processed/individual_sensors/sensor_{sensor_id}.csv', 
-        no_of_days = no_of_days
-    )
-
-
 # Step 1: Split original input datasets into separate files for each sensor
-# split_sensors()
-    
+# ph.split_sensors()
+
+SENSOR_ID= "6223"# "7125"
+NO_OF_DAYS=1
 # Step 2: Extract the first N days of data from a sensor file
-# extract_first_n_days(sensor_id="6223", no_of_days=3)
-    
-ph.check_consistency(sensor_file = BASE_DIRECTORY+ f'/Processed/sensor_6223_3_days.csv')
+ph.extract_first_no_of_days(
+    sensor_file = BASE_DIRECTORY+ f'/Processed/individual_sensors/sensor_{SENSOR_ID}.csv', 
+    no_of_days = NO_OF_DAYS
+)
+
+# Step 3: Convert datetime to timestamp
+ph.convert_datetime_to_timestamp(input_file = BASE_DIRECTORY+ f'/Processed/sensor_{SENSOR_ID}_{NO_OF_DAYS}_days.csv')
+
+# Step 4: Add inaccuracy to simulate real-world data
+ph.add_inaccuracy(
+    input_file = BASE_DIRECTORY+ f'/Processed/sensor_{SENSOR_ID}_temp_1.csv',
+    deviation= 0.05,
+    outlier_factor= 2,
+    outlier_percentage= 0.2
+)
+
+# Step 5: Add missing values to simulate real-world data
+ph.add_missing_values(
+    input_file = BASE_DIRECTORY+ f'/Processed/sensor_{SENSOR_ID}_temp_2.csv',
+    missing_percentage= 0.2
+)
+
+# Step 6: Add time of availability to simulate real-world data
+ph.add_time_of_availability(
+    input_file = BASE_DIRECTORY+ f'/Processed/sensor_{SENSOR_ID}_temp_3.csv',
+    validity_period= 5000,
+    outdated_percentage= 0.2
+)
+
+# Step 7: Delete temporary files
+ph.clean_temp_files(sensor_id=SENSOR_ID)
