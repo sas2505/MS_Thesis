@@ -1,9 +1,39 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 BASE_DIRECTORY = "E:/Personal_Drive_Backup/My Important Files/Study/Uni-Bamberg/Thesis/Odysseus/Benchmarking/Dataset/Processed"
 WINDOW_SIZE = 10000  # Number of rows per window
 VOLATILITY = 3000  # Reference time for timeliness calculation
+
+def _calculate_rmse(ground_truth, real_values):
+    """
+    Calculate Root Mean Square Error (RMSE) for a given window of values.
+    
+    :param ground_truth: Array of ground truth values
+    :param real_values: Array of observed values
+    :return: RMSE for the window
+    """
+    if len(ground_truth) != len(real_values) or len(ground_truth) == 0:
+        return None  # Ensure both arrays are of the same length and not empty
+
+    # Convert to NumPy arrays
+    ground_truth = np.array(ground_truth, dtype=np.float64)
+    real_values = np.array(real_values, dtype=np.float64)
+
+    # Remove NaN values while keeping index alignment
+    mask = ~np.isnan(real_values)  # Keep only non-NaN values
+    ground_truth = ground_truth[mask]
+    real_values = real_values[mask]
+
+    # Check if filtered arrays are empty (to avoid division by zero)
+    if len(ground_truth) == 0:
+        return None  # Return None if no valid data remains
+
+    # Compute RMSE
+    rmse = np.sqrt(np.mean((ground_truth - real_values) ** 2))
+    return rmse
+
 
 def _calculate_window_accuracy(data_window):
     """
@@ -68,6 +98,9 @@ def _calculate_window_timeliness(data_window, volatility):
     :param volatility: The reference time (e.g., 95th percentile of currency)
     :return: Average timeliness for the window
     """
+    data_window["available_time"] = pd.to_numeric(data_window["available_time"], errors="coerce")
+    data_window["timestamp"] = pd.to_numeric(data_window["timestamp"], errors="coerce")
+
     if len(data_window) == 0:
         return 1  # If the window is empty, assume perfect timeliness
     
@@ -84,16 +117,17 @@ def _calculate_window_timeliness(data_window, volatility):
     return data_window["timeliness"].mean()
 
 
-def process_csv(file_path, column_name, window_size=WINDOW_SIZE):
+def process_csv(file_path_real, file_path_gt, column_name='value', window_size=WINDOW_SIZE):
     """
     Reads a large CSV file in chunks and computes accuracy over windows of data.
 
-    :param file_path: Path to the CSV file
+    :param file_path_real: Path to the CSV file containing real-world data
+    :param file_path_gt: Path to the CSV file containing ground truth data
     :param column_name: Name of the column containing numerical data
     :param window_size: Number of rows per window (also used as chunk size)
     :return: DataFrame with accuracy per window, MAD, V_T values, and Median
     """
-    print(f"🚀 Processing {file_path} in chunks of {window_size} rows...")
+    print(f"🚀 Processing {file_path_real} in chunks of {window_size} rows...")
 
     accuracies = []
     mad_values = []
@@ -104,57 +138,74 @@ def process_csv(file_path, column_name, window_size=WINDOW_SIZE):
     threshold_values = []
     completeness_values = []
     timeliness_values = []
+    rmse_values = []
 
     total_rows = 0  # Track number of rows processed
+
+    def _process_accuracy(real_values):
+        accuracy, mad, V_T, median, threshold = _calculate_window_accuracy(real_values)
+
+        # Store results
+        value_start.append(first_Value_id)
+        value_end.append(last_Value_id)
+        accuracies.append(accuracy)
+        mad_values.append(mad)
+        vt_values.append(V_T)
+        median_values.append(median)
+        threshold_values.append(threshold)
+
+        print(
+            f"Median: {median:>11.6f} | MAD: {mad:>10.6f} | V_T: {V_T:>4} | "
+            f"Accuracy: {accuracy:>5.6f} | Threshold: {threshold:>11.6f}", end=' | '
+        )
+
+    def _process_completeness(real_chunk):
+        real_chunk = real_chunk.fillna("")  # Ensures empty values are represented as ""
+        completeness, missing_count = _calculate_window_completeness(real_chunk)
+        completeness_values.append(completeness)
+        print(
+            f"Completeness: {completeness:>5.4f} | Missing Values: {missing_count}", end=' | '
+        )
     
-    # Read the CSV file in chunks of `window_size`
-    with pd.read_csv(file_path, chunksize=window_size, dtype=str) as reader:
-        for chunk in reader:
-            if column_name not in chunk.columns:
-                raise ValueError(f"❌ Column '{column_name}' not found in the CSV file.")
+    def _process_timeliness(real_chunk):
+        timeliness = _calculate_window_timeliness(real_chunk, volatility=VOLATILITY)
+        timeliness_values.append(timeliness)
+        print(f"Timeliness: {timeliness:>5.4f}", end=" | ")
 
+    def _process_rmse(real_values, ground_truth_values):
+        rmse = _calculate_rmse(ground_truth_values, real_values)
+        rmse_values.append(rmse)
+        print(f"RMSE: {rmse:.6f}")
+
+    # Read the CSV file in chunks
+    with pd.read_csv(file_path_real, chunksize=window_size, dtype=str) as real_reader, \
+         pd.read_csv(file_path_gt, chunksize=window_size, dtype=str) as gt_reader:
+
+        for real_chunk, gt_chunk in zip(real_reader, gt_reader):
             # Convert to numeric (handles missing values)
-            temp_data = pd.to_numeric(chunk[column_name], errors="coerce")
-            # Process only full windows
-            if len(chunk) == window_size:
-                first_Value_id = chunk['value_id'].iloc[0]
-                last_Value_id = chunk['value_id'].iloc[window_size - 1]
+            real_values = pd.to_numeric(real_chunk["value"], errors="coerce").to_numpy()
+            ground_truth_values = pd.to_numeric(gt_chunk["value"], errors="coerce").to_numpy()
 
+            # Process only full windows
+            if len(real_chunk) == window_size and len(gt_chunk) == window_size:
+                first_Value_id = real_chunk['value_id'].iloc[0]
+                last_Value_id = real_chunk['value_id'].iloc[window_size - 1]
+                print(f"✅ID {first_Value_id:>10}-{last_Value_id:<10}", end=" | ")
 
                 # Calculate accuracy for each window
-                window = temp_data.to_numpy()
-                accuracy, mad, V_T, median, threshold = _calculate_window_accuracy(window)
-
-                # Store results
-                value_start.append(first_Value_id)
-                value_end.append(last_Value_id)
-                accuracies.append(accuracy)
-                mad_values.append(mad)
-                vt_values.append(V_T)
-                median_values.append(median)
-                threshold_values.append(threshold)
-
-                print(
-                    f"✅ Value_ID {first_Value_id:>10}-{last_Value_id:<10} | "
-                    f"Median: {median:>11.6f} | MAD: {mad:>10.6f} | V_T: {V_T:>6} | "
-                    f"Accuracy: {accuracy:>5.6f} | Threshold: {threshold:>11.6f}", end=' | '
-                )
+                _process_accuracy(real_values)
 
                 # Calculate completeness for each window
-                window = chunk.fillna("")  # Ensures empty values are represented as ""
-                completeness, missing_count = _calculate_window_completeness(window)
-                completeness_values.append(completeness)
-                print(
-                    f"Completeness: {completeness:>5.4f} | Missing Values: {missing_count}", end=' | '
-                )
-
+                _process_completeness(real_chunk)
 
                 # Calculate timeliness for each window
-                timeliness = _calculate_window_timeliness(chunk, volatility=VOLATILITY)
-                timeliness_values.append(timeliness)
-                print(f"Timeliness: {timeliness:>5.4f}")
-                print("-" * 60)
-                total_rows += len(chunk)
+                _process_timeliness(real_chunk)
+
+                # Calculate RMSE for the window
+                _process_rmse(real_values=real_values, ground_truth_values=ground_truth_values)
+
+                print("-" * 90)
+                total_rows += len(real_chunk)
 
     # Store results in a DataFrame
     result_df = pd.DataFrame({
@@ -166,11 +217,11 @@ def process_csv(file_path, column_name, window_size=WINDOW_SIZE):
         # "V_T (Incorrect Values)": vt_values,
         # "Threshold": threshold_values,
         "Completeness": completeness_values,
-        "Timeliness": timeliness_values
+        "Timeliness": timeliness_values,
+        "RMSE": rmse_values
     })
 
     # result_df = result_df.iloc[::-1].reset_index(drop=True)  # Reverse order
-
     print(f"🎉 Processing complete! Total rows processed: {total_rows}")
     return result_df
 
@@ -219,13 +270,73 @@ def compare_results(result_df, comparison_file):
     print(f"✅ Comparison complete! Differences calculated.")
     return diff_df
 
+def check_numeric_column(df, column_name):
+    """
+    Checks if all values in a column are numeric.
+    If non-numeric values are found, print the entire row.
 
+    :param df: DataFrame to check
+    :param column_name: Name of the column to check
+    """
+    # Convert column to numeric (force errors to 'NaN')
+    df[column_name] = pd.to_numeric(df[column_name], errors="coerce")
+
+    # Find rows where conversion failed (i.e., NaN values appeared)
+    non_numeric_rows = df[df[column_name].isna()]
+
+    if not non_numeric_rows.empty:
+        print(f"⚠️ Found {len(non_numeric_rows)} non-numeric values in column '{column_name}':")
+        print(non_numeric_rows)
+    else:
+        print(f"✅ All values in column '{column_name}' are numeric.")
+
+def plot_accuracy_vs_rmse(df):
+    """
+    Plots Accuracy vs RMSE from a given DataFrame with columns 'Accuracy' and 'RMSE'.
+    
+    :param df: Pandas DataFrame containing 'Accuracy', 'RMSE', and index representing ID ranges.
+    """
+    # Extract values dynamically
+    accuracy = df["Accuracy"].tolist()
+    rmse = df["RMSE"].tolist()
+    ids = df.index.astype(str).tolist()  # Convert index to string for labeling
+
+    # Create a dual y-axis plot for Accuracy vs RMSE
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+
+    # Plot Accuracy on the left y-axis
+    ax1.set_xlabel("ID Range")
+    ax1.set_ylabel("Accuracy", color='b')
+    ax1.plot(ids, accuracy, marker='o', linestyle='-', color='b', label="Accuracy")
+    ax1.tick_params(axis='y', labelcolor='b')
+
+    # Create a second y-axis for RMSE
+    ax2 = ax1.twinx()
+    ax2.set_ylabel("RMSE", color='r')
+    ax2.plot(ids, rmse, marker='s', linestyle='--', color='r', label="RMSE")
+    ax2.tick_params(axis='y', labelcolor='r')
+
+    # Title and formatting
+    plt.title("Accuracy vs RMSE (Dual Y-Axis)")
+    ax1.set_xticks(range(len(ids)))  # Set x-ticks for readability
+    ax1.set_xticklabels(ids, rotation=45, ha='right')
+
+    # Grid and layout adjustments
+    fig.tight_layout()
+    plt.grid(True)
+
+    # Show the plot
+    plt.show()
 
 # Example usage
-file_path = BASE_DIRECTORY + "/sensor_7125_final.csv"
-result_df = process_csv(file_path, "value")
-comparison_file = BASE_DIRECTORY + "/odysseus_result.csv"
-difference_df = compare_results(result_df, comparison_file)
+sensor_id = "6687"
+file_path = BASE_DIRECTORY + f"/sensor_{sensor_id}_processed.csv"
+gt = BASE_DIRECTORY + f"/sensor_{sensor_id}_original.csv"
+result_df = process_csv(file_path_real=file_path, file_path_gt=gt, column_name="value")
 
-# Display the comparison DataFrame
-print(difference_df)
+# Compare result with Odysseus output
+# comparison_file = BASE_DIRECTORY + "/odysseus_result.csv"
+# difference_df = compare_results(result_df, comparison_file)
+# print(difference_df)
+
+plot_accuracy_vs_rmse(result_df)
