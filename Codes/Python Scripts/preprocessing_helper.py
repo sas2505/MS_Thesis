@@ -76,7 +76,7 @@ def extract_first_no_of_days(sensor_file, no_of_days):
     output_dir = BASE_DIRECTORY + "/Processed"
     os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
     sensor_id = _get_sensor_id_from_filename(sensor_file) 
-    new_filename = f"sensor_{sensor_id}_{no_of_days}_days.csv"
+    new_filename = f"sensor_{sensor_id}_original.csv"
     output_file = os.path.join(output_dir, new_filename)
 
     # Initialize variables
@@ -302,7 +302,7 @@ def add_time_of_availability(input_file, validity_period=5000, outdated_percenta
     # Define output file
     output_dir = os.path.join(BASE_DIRECTORY, "Processed")
     os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
-    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_final.csv"
+    new_filename = f"sensor_{_get_sensor_id_from_filename(input_file)}_processed.csv"
     output_file = os.path.join(output_dir, new_filename)
 
     first_chunk = True  # Handle header writing
