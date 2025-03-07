@@ -1,0 +1,135 @@
+#PARSER PQL
+
+#DEFINE window_size 10000
+#DEFINE volatility 3000
+
+#ADDQUERY
+
+windowedData = ELEMENTWINDOW({
+    size = ${window_size}, 
+    slide = ${window_size}
+}, sensor_source)
+
+
+///------------------------------------------------------------------
+///-------------------------Calculate Accuracy-----------------------
+filteredData = SELECT({ PREDICATE='!isNull(value)'
+	}, windowedData)
+	
+medians = AGGREGATE({
+    aggregations = [
+        ['MEDIAN', 'value', 'median']
+    ]
+}, filteredData)
+
+modifiedData = JOIN({PREDICATE='true'},
+	filteredData, medians
+)
+
+absoluteDeviations = MAP({
+    expressions = [
+        ['abs(value - median)', 'absolute_deviation']
+    ],
+    keepInput = 'true'
+}, modifiedData)
+
+madValues = AGGREGATE({
+    aggregations = [
+        ['MEDIAN', 'absolute_deviation', 'mad']
+    ]
+}, absoluteDeviations)
+
+thresholdValues = MAP({
+    expressions = [
+        ['3 * mad * 1.4826', 'threshold']
+    ],
+    keepInput = 'true' /// remove this
+}, madValues)
+
+finalData = JOIN({PREDICATE='true'}, 
+	absoluteDeviations, thresholdValues
+)
+
+correctData = SELECT({ PREDICATE='absolute_deviation <= threshold'
+	}, finalData)
+	
+vt = AGGREGATE({
+    aggregations = [
+///        ['FIRST', 'value_id', 'first'],
+///        ['LAST', 'value_id', 'last'],
+///        ['FIRST', 'median', 'median'],
+///        ['FIRST', 'mad', 'mad'],
+///        ['FIRST', 'threshold', 'threshold'],
+        ['COUNT', 'value', 'vt']
+    ]
+}, correctData)
+
+accuracy = MAP({
+	expressions =[
+		['1 - (${window_size} - vt) / ${window_size}', 'accuracy']///,
+///		['${window_size} - vt', 'V_T']
+	]///,
+///    keepInput = 'true'
+}, vt)
+
+
+///------------------------------------------------------------------
+///-------------------------Calculate Completeness-------------------
+/// Select tuples where any attribute is NULL (incomplete tuples)
+incompleteTuples = SELECT({
+    predicate = 'isNull(value) || isNull(sensor_id) || isNull(value_id)'
+}, windowedData)
+
+/// Count tuples with missing values
+N_M = AGGREGATE({
+    aggregations = [
+        ['COUNT', '*', 'N_M']
+    ]
+}, incompleteTuples)
+
+/// calculate completeness
+completeness = MAP({
+	expressions =[
+		['1 - N_M / ${window_size}', 'completeness']///,
+///		['N_M', 'N_M']
+	]
+}, N_M)
+
+
+///------------------------------------------------------------------
+///-------------------------Calculate Timeliness---------------------
+currencyData = MAP({
+    expressions = [
+        ['max((1-(available_time - timestamp)/${volatility}), 0)', 'timeliness']
+    ],
+    keepInput = 'true'
+}, windowedData)
+
+timeliness = AGGREGATE({
+	aggregations = [
+		['FIRST', 'value_id', 'first'],
+        ['LAST', 'value_id', 'last'],
+		['AVG', 'timeliness', 'timeliness']
+	]
+}, currencyData)
+
+///------------------------------------------------------------------
+///-------------------------Compile Output---------------------------
+temp = JOIN({PREDICATE='true'}, 
+	accuracy, completeness
+)
+
+temp2 = JOIN({PREDICATE='true'}, 
+	temp, timeliness
+)
+
+out = CSVFILESINK({
+	sink = 'countsink', 
+	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\odysseus_result.csv', 
+	writemetadata = true,
+	options = [
+		['csv.writeheading', 'true'],
+		['csv.floatingformatter','#.##'], 
+		['decimalseparator','.']
+	]
+}, temp2)

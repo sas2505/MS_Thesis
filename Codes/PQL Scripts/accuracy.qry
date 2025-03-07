@@ -8,7 +8,7 @@
 windowedData = ELEMENTWINDOW({
     size = ${window_size}, 
     slide = ${window_size}
-}, source)
+}, sensor_source)
 
 filteredData = SELECT({ PREDICATE='!isNull(value)'
 	}, windowedData)
@@ -68,3 +68,12 @@ accuracy = MAP({
 	],
     keepInput = 'true'
 }, vt)
+
+///out = CSVFILESINK({
+///	sink = 'countsink', 
+///	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Smart-Home\\processed\\individual_sensor\\2020-02-27\\out.csv', 
+///	writemetadata = true,
+///	options = [
+///		['csv.writeheading', 'true']
+///	]
+///}, accuracy)
