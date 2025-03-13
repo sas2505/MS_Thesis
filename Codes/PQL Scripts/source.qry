@@ -1,7 +1,7 @@
 #PARSER PQL
 
 ///#DEFINE file_path 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Smart-Home\\processed\\individual_sensor\\2020-02-27\\sensor_6223_processed.csv'
-#DEFINE file_path 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\sensor_6687_processed.csv'
+#DEFINE file_path 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\sensor_5896_processed.csv'
 
 #RUNQUERY
 sensor_source ::= ACCESS({
@@ -14,7 +14,7 @@ sensor_source ::= ACCESS({
 		['filename', ${file_path}],
         ['separator', ','],
 ///        ['nanodelay', '10'],
-///        ['scheduler.delay', '1'],
+        ['scheduler.delay', '1'],
         ['skipFirstLines','1']
     ],
     schema = [

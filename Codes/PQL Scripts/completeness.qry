@@ -32,9 +32,11 @@ completeness = MAP({
 
 out = CSVFILESINK({
 	sink = 'countsink', 
-	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Smart-Home\\processed\\individual_sensor\\2020-02-27\\out.csv', 
+	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\odysseus_completeness.csv', 
 	writemetadata = true,
 	options = [
-		['csv.writeheading', 'true']
+		['csv.writeheading', 'true'],
+		['csv.floatingformatter','#.##'], 
+		['decimalseparator','.']
 	]
 }, completeness)

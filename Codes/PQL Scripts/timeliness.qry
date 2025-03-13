@@ -21,3 +21,14 @@ currencyData = MAP({
 timeliness = AGGREGATE({
 	aggregations = [['AVG', 'timeliness', 'timeliness']]
 }, currencyData)
+
+out = CSVFILESINK({
+	sink = 'countsink', 
+	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\odysseus_timeliness.csv', 
+	writemetadata = true,
+	options = [
+		['csv.writeheading', 'true'],
+		['csv.floatingformatter','#.##'], 
+		['decimalseparator','.']
+	]
+}, timeliness)

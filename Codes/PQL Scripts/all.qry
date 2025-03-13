@@ -1,6 +1,6 @@
 #PARSER PQL
 
-#DEFINE window_size 10000
+#DEFINE window_size 20000
 #DEFINE volatility 3000
 
 #ADDQUERY
