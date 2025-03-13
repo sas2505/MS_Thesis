@@ -68,5 +68,7 @@ def calculate_latency_throughput(file_path, save_output=True):
 
     return df  # Return DataFrame for further analysis if needed
 
+
+FILE_PATH = "E:/Personal_Drive_Backup/My Important Files/Study/Uni-Bamberg/Thesis/Odysseus/Benchmarking/Dataset/Processed/5896/odysseus_result_20_0.csv"
 # Example Usage:
 df_result = calculate_latency_throughput(FILE_PATH, save_output=False)

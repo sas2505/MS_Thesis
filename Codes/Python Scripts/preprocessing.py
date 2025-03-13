@@ -8,14 +8,14 @@ from preprocessing_helper import BASE_DIRECTORY
 # Step 1: Split original input datasets into separate files for each sensor
 # ph.split_sensors()
 
-SENSOR_ID= "6687"# "7125"
-NO_OF_DAYS= 5
-DAVIATION= 0.05
-OUTLIER_FACTOR= 2
-OUTLIER_PERCENTAGE= 0.5
-MISSING_PERCENTAGE= 0.2
-VALIDITY_PERIOD= 5000
-OUTDATED_PERCENTAGE= 0.2
+SENSOR_ID= "5896"# "7125"
+NO_OF_DAYS= 60 # no of days to extract from the original dataset
+DAVIATION= 0.05 # percentage of inaccuracy to be added
+OUTLIER_FACTOR= 2 # factor to determine the outlier threshold
+OUTLIER_PERCENTAGE= 0.5 # percentage of outliers to be added
+MISSING_PERCENTAGE= 0.2 # percentage of missing values to be added
+VALIDITY_PERIOD= 5000   # time of availability in milliseconds
+OUTDATED_PERCENTAGE= 0.2# percentage of outdated values to be added
 
 # Step 2: Extract the first N days of data from a sensor file
 ph.extract_first_no_of_days(

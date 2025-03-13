@@ -71,7 +71,7 @@ def extract_first_no_of_days(sensor_file, no_of_days):
     
     :param sensor_file: Path to the sensor CSV file.
     """
-    print(f"🚀Extracting first {no_of_days} days from {sensor_file}...")
+    print(f"🚀Extracting first {no_of_days} days from {_get_sensor_id_from_filename(sensor_file)}...")
     # Define output file
     output_dir = BASE_DIRECTORY + "/Processed"
     os.makedirs(output_dir, exist_ok=True)  # Create output directory if it doesn't exist
@@ -246,7 +246,7 @@ def add_inaccuracy(input_file, deviation=0.05, outlier_percentage=0.02, outlier_
             chunk.to_csv(output_file, mode="a", index=False, header=first_chunk)
             first_chunk = False  # Ensure header is only written once
 
-            print(f"✅ Processed {len(chunk)} rows...")
+            # print(f"✅ Processed {len(chunk)} rows...")
 
     print(f"🎉 Processing complete! Output saved at: {output_file}")
 
@@ -283,7 +283,7 @@ def add_missing_values(input_file, missing_percentage=0.05):
             chunk.to_csv(output_file, mode="a", header=first_chunk, index=False)
             first_chunk = False  # Ensure header is only written once
 
-            print(f"✅ Processed {len(chunk)} rows, introduced {num_missing} missing values.")
+            # print(f"✅ Processed {len(chunk)} rows, introduced {num_missing} missing values.")
 
 
     print(f"🎉 Processing complete! Output saved at: {output_file}")
@@ -306,6 +306,7 @@ def add_time_of_availability(input_file, validity_period=5000, outdated_percenta
     output_file = os.path.join(output_dir, new_filename)
 
     first_chunk = True  # Handle header writing
+    count = 0
 
     # Read file in chunks
     with pd.read_csv(input_file, chunksize=chunk_size, dtype=str) as reader:
@@ -325,9 +326,9 @@ def add_time_of_availability(input_file, validity_period=5000, outdated_percenta
             # Save the modified chunk
             chunk.to_csv(output_file, mode="a", index=False, header=first_chunk)
             first_chunk = False  # Ensure header is only written once
-
-            print(f"✅ Processed {len(chunk)} rows, added {num_outdated} outdated records.")
-
+            count += len(chunk)
+            # print(f"✅ Processed {len(chunk)} rows, added {num_outdated} outdated records.")
+    print(f"✅ Total Processed {count} rows")
     print(f"🎉 Processing complete! Output saved as {output_file}")
 
 

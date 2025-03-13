@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 BASE_DIRECTORY = "E:/Personal_Drive_Backup/My Important Files/Study/Uni-Bamberg/Thesis/Odysseus/Benchmarking/Dataset/Processed"
 WINDOW_SIZE = 10000  # Number of rows per window
 VOLATILITY = 3000  # Reference time for timeliness calculation
+SHOW = False  # Set to True to display individual window results
 
 def _calculate_rmse(ground_truth, real_values):
     """
@@ -153,29 +154,31 @@ def process_csv(file_path_real, file_path_gt, column_name='value', window_size=W
         vt_values.append(V_T)
         median_values.append(median)
         threshold_values.append(threshold)
-
-        print(
-            f"Median: {median:>11.6f} | MAD: {mad:>10.6f} | V_T: {V_T:>4} | "
-            f"Accuracy: {accuracy:>5.6f} | Threshold: {threshold:>11.6f}", end=' | '
-        )
+        
+        if SHOW:
+            print(
+                f"Median: {median:>11.6f} | MAD: {mad:>10.6f} | V_T: {V_T:>4} | "
+                f"Accuracy: {accuracy:>5.6f} | Threshold: {threshold:>11.6f}", end=' | '
+            )
 
     def _process_completeness(real_chunk):
         real_chunk = real_chunk.fillna("")  # Ensures empty values are represented as ""
         completeness, missing_count = _calculate_window_completeness(real_chunk)
         completeness_values.append(completeness)
-        print(
-            f"Completeness: {completeness:>5.4f} | Missing Values: {missing_count}", end=' | '
-        )
+        if SHOW:
+            print(
+                f"Completeness: {completeness:>5.4f} | Missing Values: {missing_count}", end=' | '
+            )
     
     def _process_timeliness(real_chunk):
         timeliness = _calculate_window_timeliness(real_chunk, volatility=VOLATILITY)
         timeliness_values.append(timeliness)
-        print(f"Timeliness: {timeliness:>5.4f}", end=" | ")
+        if SHOW: print(f"Timeliness: {timeliness:>5.4f}", end=" | ")
 
     def _process_rmse(real_values, ground_truth_values):
         rmse = _calculate_rmse(ground_truth_values, real_values)
         rmse_values.append(rmse)
-        print(f"RMSE: {rmse:.6f}")
+        if SHOW: print(f"RMSE: {rmse:.6f}")
 
     # Read the CSV file in chunks
     with pd.read_csv(file_path_real, chunksize=window_size, dtype=str) as real_reader, \
@@ -190,7 +193,7 @@ def process_csv(file_path_real, file_path_gt, column_name='value', window_size=W
             if len(real_chunk) == window_size and len(gt_chunk) == window_size:
                 first_Value_id = real_chunk['value_id'].iloc[0]
                 last_Value_id = real_chunk['value_id'].iloc[window_size - 1]
-                print(f"✅ID {first_Value_id:>10}-{last_Value_id:<10}", end=" | ")
+                if SHOW: print(f"✅ID {first_Value_id:>10}-{last_Value_id:<10}", end=" | ")
 
                 # Calculate accuracy for each window
                 _process_accuracy(real_values)
@@ -204,7 +207,7 @@ def process_csv(file_path_real, file_path_gt, column_name='value', window_size=W
                 # Calculate RMSE for the window
                 _process_rmse(real_values=real_values, ground_truth_values=ground_truth_values)
 
-                print("-" * 90)
+                if SHOW: print("-" * 90)
                 total_rows += len(real_chunk)
 
     # Store results in a DataFrame
@@ -218,7 +221,7 @@ def process_csv(file_path_real, file_path_gt, column_name='value', window_size=W
         # "Threshold": threshold_values,
         "Completeness": completeness_values,
         "Timeliness": timeliness_values,
-        "RMSE": rmse_values
+        # "RMSE": rmse_values
     })
 
     # result_df = result_df.iloc[::-1].reset_index(drop=True)  # Reverse order
@@ -329,14 +332,15 @@ def plot_accuracy_vs_rmse(df):
     plt.show()
 
 # Example usage
-sensor_id = "6687"
+WINDOW_SIZE = 20000
+sensor_id = "5896"
 file_path = BASE_DIRECTORY + f"/sensor_{sensor_id}_processed.csv"
 gt = BASE_DIRECTORY + f"/sensor_{sensor_id}_original.csv"
 result_df = process_csv(file_path_real=file_path, file_path_gt=gt, column_name="value")
 
 # Compare result with Odysseus output
-# comparison_file = BASE_DIRECTORY + "/odysseus_result.csv"
-# difference_df = compare_results(result_df, comparison_file)
+comparison_file = BASE_DIRECTORY + "/odysseus_result.csv"
+difference_df = compare_results(result_df, comparison_file)
 # print(difference_df)
-
-plot_accuracy_vs_rmse(result_df)
+difference_df.to_csv(BASE_DIRECTORY + "/difference.csv", index=True)
+# plot_accuracy_vs_rmse(result_df)
