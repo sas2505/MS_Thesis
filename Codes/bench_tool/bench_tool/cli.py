@@ -1,6 +1,11 @@
 import os
 import click
-from bench_tool import configuration_reader, preprocessing, statistics
+from bench_tool import (
+    configuration_reader, 
+    preprocessing, 
+    statistics,
+    dq_measurement,
+)
 
 
 LOGO = (
@@ -103,12 +108,52 @@ def show_stat(input_file):
     """Statistics commands for data analysis."""
     statistics.calculate_statistics(input_file)
 
+@click.group()
+def data_quality():
+    """Data Quality Measurement commands."""
+    pass
 
+@click.command()
+@click.argument("data_file", type=click.Path(exists=True))
+@click.option("--config", 
+              "-c", 
+              type=click.Path(exists=True), 
+              help="Path to the configuration file. If not provided, default paramters will be used")
+def show(data_file, config):
+    """Measures and shows the data quality measurement results."""
+    config = configuration_reader.ConfigReader(config)
+    dq_measurement.measure_dqs(
+        file_path_real=data_file,
+        window_size=config.WINDOW_SIZE,
+        volatility=config.VOLATILITY,
+        SHOW=True
+    )
+
+@click.command()
+@click.argument("data_file", type=click.Path(exists=True))
+@click.argument("result_file", type=click.Path(exists=True))
+@click.option("--config", 
+              "-c", 
+              type=click.Path(exists=True), 
+              help="Path to the configuration file. If not provided, default paramters will be used")
+def verify(data_file, result_file, config):
+    """Verifies the results of the qulity measurement queries."""
+    config = configuration_reader.ConfigReader(config)
+    result_df = dq_measurement.measure_dqs(
+        file_path_real=data_file,
+        window_size=config.WINDOW_SIZE,
+        volatility=config.VOLATILITY,
+        SHOW=False
+    )
+    dq_measurement.compare_results(result_df, result_file)
+
+data_quality.add_command(verify)
+data_quality.add_command(show)
 
 # Add commands to the CLI group
 cli.add_command(preprocess, "preprocess")
 cli.add_command(show_stat, "show-stats")
-# cli.add_command(benchmark_cmd, "benchmark")
+cli.add_command(data_quality, "data-quality")
 
 if __name__ == "__main__":
     cli()
