@@ -1,6 +1,6 @@
 import os
 import click
-from bench_tool import configuration_reader, preprocessing
+from bench_tool import configuration_reader, preprocessing, statistics
 
 
 LOGO = (
@@ -95,9 +95,19 @@ preprocess.add_command(split)
 preprocess.add_command(extract)
 preprocess.add_command(prepare)
 
+
+
+@click.command()
+@click.argument("input_file", type=click.Path(exists=True))
+def show_stat(input_file):
+    """Statistics commands for data analysis."""
+    statistics.calculate_statistics(input_file)
+
+
+
 # Add commands to the CLI group
 cli.add_command(preprocess, "preprocess")
-# cli.add_command(stats_cmd, "stats")
+cli.add_command(show_stat, "show-stats")
 # cli.add_command(benchmark_cmd, "benchmark")
 
 if __name__ == "__main__":
