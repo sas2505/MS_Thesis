@@ -5,6 +5,7 @@ from bench_tool import (
     preprocessing, 
     statistics,
     dq_measurement,
+    benchmarking
 )
 
 
@@ -150,10 +151,39 @@ def verify(data_file, result_file, config):
 data_quality.add_command(verify)
 data_quality.add_command(show)
 
+
+@click.group()
+def benchmark():
+    """Benchmarking commands for performance analysis."""
+    pass
+
+@click.command()
+@click.argument("result_file", type=click.Path(exists=True))
+def analyze(result_file):
+    """Analyzes the latency and throughput of an file from Odysseus."""
+    benchmarking.calculate_latency_throughput(result_file)
+
+@click.command()
+@click.argument("result_files", nargs=-1, type=click.Path(exists=True))
+def compare(result_files):
+    """Compares the latency and throughput of multiple files and plots the results."""
+    if not result_files:
+        click.echo("❌ No files provided. Please provide at least one file.")
+        return
+
+    click.echo(f"📂 Processing {len(result_files)} files...")
+    
+    benchmarking.compare_files(result_files)
+
+
+benchmark.add_command(analyze)
+benchmark.add_command(compare)
+
 # Add commands to the CLI group
 cli.add_command(preprocess, "preprocess")
 cli.add_command(show_stat, "show-stats")
 cli.add_command(data_quality, "data-quality")
+cli.add_command(benchmark, "benchmark")
 
 if __name__ == "__main__":
     cli()
