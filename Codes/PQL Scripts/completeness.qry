@@ -2,7 +2,7 @@
 
 #DEFINE window_size 10000
 
-#ADDQUERY
+#RUNQUERY
 
 /// Apply a tumbling window of defined size
 windowedData = ELEMENTWINDOW({
@@ -32,7 +32,7 @@ completeness = MAP({
 
 out = CSVFILESINK({
 	sink = 'countsink', 
-	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\odysseus_completeness.csv', 
+	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\completeness.csv', 
 	writemetadata = true,
 	options = [
 		['csv.writeheading', 'true'],

@@ -1,15 +1,15 @@
 #PARSER PQL
 
 #DEFINE window_size 10000
-#DEFINE volatility 3000
+#DEFINE volatility 2000
 
-#ADDQUERY
+#RUNQUERY
 
 /// Apply a tumbling window of defined size
 windowedData = ELEMENTWINDOW({
     size = ${window_size},     
     slide = ${window_size}
-}, source)
+}, sensor_source)
 
 currencyData = MAP({
     expressions = [
@@ -24,7 +24,7 @@ timeliness = AGGREGATE({
 
 out = CSVFILESINK({
 	sink = 'countsink', 
-	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\odysseus_timeliness.csv', 
+	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\timeliness.csv', 
 	writemetadata = true,
 	options = [
 		['csv.writeheading', 'true'],

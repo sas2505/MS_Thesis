@@ -3,7 +3,8 @@
 #DEFINE window_size 10000
 
 
-#ADDQUERY
+///#ADDQUERY
+#RUNQUERY
 
 windowedData = ELEMENTWINDOW({
     size = ${window_size}, 
@@ -71,7 +72,7 @@ accuracy = MAP({
 
 out = CSVFILESINK({
 	sink = 'countsink', 
-	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\odysseus_accuracy.csv', 
+	filename = 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\accuracy.csv', 
 	writemetadata = true,
 	options = [
 		['csv.writeheading', 'true'],
