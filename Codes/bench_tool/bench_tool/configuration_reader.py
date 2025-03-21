@@ -11,11 +11,12 @@ class ConfigReader:
         """Default Configuration Values"""
         self.DAVIATION = 0.05 
         self.OUTLIER_FACTOR = 2 
-        self.OUTLIER_PERCENTAGE = 0.5 
-        self.MISSING_PERCENTAGE = 0.2
-        self.VOLATILITY = 5000
-        self.OUTDATED_PERCENTAGE = 0.8
+        self.OUTLIER_PERCENTAGE = 0.05 
+        self.MISSING_PERCENTAGE = 0.1
+        self.VOLATILITY = 4000
+        self.OUTDATED_PERCENTAGE = 0.2
         self.WINDOW_SIZE = 50000  
+        self.CHUNK_SIZE = 30000
 
         """Initialize ConfigReader by loading the YAML configuration file."""
         if not config_file:
@@ -35,5 +36,6 @@ class ConfigReader:
             self.VOLATILITY = config_data.get("VOLATILITY", self.VOLATILITY)
             self.OUTDATED_PERCENTAGE = config_data.get("OUTDATED_PERCENTAGE", self.OUTDATED_PERCENTAGE)
             self.WINDOW_SIZE = config_data.get("WINDOW_SIZE", self.WINDOW_SIZE)
+            self.CHUNK_SIZE = config_data.get("CHUNK_SIZE", self.CHUNK_SIZE)
  
 

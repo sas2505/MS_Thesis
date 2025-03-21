@@ -1,0 +1,7 @@
+DAVIATION: 0.05 # percentage of noise to be added
+OUTLIER_FACTOR: 2 # factor to determine the outlier threshold
+OUTLIER_PERCENTAGE: 0.05 # percentage of outliers to be added
+MISSING_PERCENTAGE: 0.1 # percentage of missing values to be added
+VOLATILITY: 2000   # time of availability in milliseconds
+OUTDATED_PERCENTAGE: 0.1 # percentage of outdated values to be added
+CHUNK_SIZE: 35000  # Number of rows per chunk

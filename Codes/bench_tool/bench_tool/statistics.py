@@ -4,9 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
 
-chunk_size = 50000
 
-def calculate_statistics(file_path, column_name='value', chunk_size=chunk_size):
+def calculate_statistics(file_path, chunk_size, column_name='value'):
     """
     Reads a CSV file in chunks, counts unique values in a specified column, and plots distribution.
 

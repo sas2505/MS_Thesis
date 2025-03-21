@@ -197,6 +197,12 @@ def measure_dqs(file_path_real, window_size, volatility, SHOW=False):
                 if SHOW: print("-" * 90)
                 total_rows += len(real_chunk)
 
+        if SHOW:
+            avg_accuracy = np.mean(accuracies) if accuracies else 0
+            avg_completeness = np.mean(completeness_values) if completeness_values else 0
+            avg_timeliness = np.mean(timeliness_values) if timeliness_values else 0
+            print(f"Average Accuracy: {avg_accuracy:.4f} | Average Completeness: {avg_completeness:.4f} | Average Timeliness: {avg_timeliness:.4f}")
+
     # Store results in a DataFrame
     result_df = pd.DataFrame({
         "Value_Start": value_start,

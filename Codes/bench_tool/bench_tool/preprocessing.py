@@ -5,14 +5,14 @@ import os
 import pandas as pd
 import numpy as np
 
-chunk_size = 50000
 
-
-def split_sensors_by_file(input_file, output_dir):
+def split_sensors_by_file(input_file, output_dir, chunk_size):
     """
     Reads a large dataset in chunks and splits data for each sensor into separate files.
     
     :param input_file: Path to the CSV file containing sensor data.
+    :param output_dir: Directory to save the sensor-specific files.
+    :param chunk_size: Number of rows to process per chunk.
     """
     print(f"🚀 Splitting {os.path.basename(input_file)} into sensor-specific files...")
     
@@ -40,16 +40,17 @@ def split_sensors_by_file(input_file, output_dir):
     print(f"✅ Data successfully split into sensor-specific files in: {output_dir}")
 
 
-def extract_first_no_of_days(sensor_file, no_of_days, output_dir):
+def extract_first_no_of_days(sensor_file, no_of_days, output_dir, chunk_size):
     """
     Extracts the first N days of data from a sensor file and saves to a new file.
     
     :param sensor_file: Path to the sensor CSV file.
     :param no_of_days: Number of days to extract.
     :param output_file: Path to save the extracted data.
+    :param chunk_size: Number of rows to process per chunk.
     """
     input_file_name = os.path.basename(sensor_file).rsplit('.', 1)[0]
-    print(f"⏳Extracting first {no_of_days} days data from {input_file_name}.csv ...")
+    print(f"⏳ Extracting first {no_of_days} days data from {input_file_name}.csv ...")
     # Define output file
     output_file = os.path.join(output_dir, f"{input_file_name}_original.csv")
 
@@ -89,11 +90,12 @@ def extract_first_no_of_days(sensor_file, no_of_days, output_dir):
         print(f"✅ Extracted first {no_of_days} days to {output_file}")
 
 
-def convert_datetime_to_timestamp(input_file):
+def convert_datetime_to_timestamp(input_file, chunk_size):
     """
     Converts the 'timestamp' column to Unix timestamp format.
     
     :param input_file: Path to the sensor CSV file.
+    :param chunk_size: Number of rows to process per chunk.
     """
     print(f"🚀 Converting 'timestamp' to Unix timestamp in {input_file}...")
 
@@ -117,7 +119,7 @@ def convert_datetime_to_timestamp(input_file):
     return output_file
 
 
-def add_inaccuracy(input_file, deviation=0.05, outlier_percentage=0.02, outlier_factor=3):
+def add_inaccuracy(input_file, chunk_size, deviation=0.05, outlier_percentage=0.02, outlier_factor=3):
     """ 
     Adds inaccuracy to large sensor data files by introducing noise and outliers in chunks.
     
@@ -125,7 +127,7 @@ def add_inaccuracy(input_file, deviation=0.05, outlier_percentage=0.02, outlier_
     :param deviation: The standard deviation of the Gaussian noise to add (default: 0.05).
     :param outlier_percentage: The percentage of outliers to introduce (default: 0.02).
     :param outlier_factor: The factor by which to multiply outliers (default: 3).
-    :param chunk_size: Number of rows to process per chunk (default: 500,000).
+    :param chunk_size: Number of rows to process per chunk.
     """
     def _process_chunk(data):
         """ Adds Gaussian noise and outliers while preserving original data type and precision. """
@@ -152,7 +154,7 @@ def add_inaccuracy(input_file, deviation=0.05, outlier_percentage=0.02, outlier_
             decimal_places = data.astype(str).str.split('.').str[-1].str.len().max()
             return noisy_data.round(decimal_places)  # Convert back to rounded float
     input_file_name = os.path.basename(input_file).rsplit('.', 1)[0][:-7]
-    print(f"🚀 Introducing inaccuracy in {input_file_name} ...")
+    print(f"🚀 Introducing inaccuracy in {input_file_name} with {deviation*100:.2f}% noise and {outlier_percentage*100:.2f}% outliers ...")
 
     column = 'value'
 
@@ -174,11 +176,12 @@ def add_inaccuracy(input_file, deviation=0.05, outlier_percentage=0.02, outlier_
     return output_file
 
 
-def add_missing_values(input_file, missing_percentage=0.05):
+def add_missing_values(input_file, chunk_size, missing_percentage=0.05):
     """
     Introduces missing values in the 'value' column of sensor data files.
     :param input_file: Path to the sensor CSV file.
     :param missing_percentage: The percentage of missing values to introduce (default:  0.05).
+    :param chunk_size: Number of rows to process per chunk.
     """
     input_file_name = os.path.basename(input_file).rsplit('.', 1)[0][:-7]
     print(f"🚀 Introducing {input_file_name} with {missing_percentage*100:.2f}% missing values...")
@@ -211,13 +214,14 @@ def add_missing_values(input_file, missing_percentage=0.05):
     return output_file
 
 
-def add_time_of_availability(input_file, output_dir, validity_period=5000, outdated_percentage=0.1):
+def add_time_of_availability(input_file, output_dir, chunk_size, validity_period=5000, outdated_percentage=0.1): 
     """
     Adds an 'available_time' column to a large sensor dataset, simulating data arrival time.
     
     :param input_file: Path to the input CSV file.
     :param validity_period: Time period within which data is expected to be valid.
     :param outdated_percentage: Percentage of records that will be marked as outdated.
+    :param chunk_size: Number of rows to process per chunk.
     """
     input_file_name = os.path.basename(input_file).rsplit('.', 1)[0][:-7]
     print(f"🚀 Adding maximum validity_period={validity_period} milliseconds and {outdated_percentage:.2%} outdated values")
