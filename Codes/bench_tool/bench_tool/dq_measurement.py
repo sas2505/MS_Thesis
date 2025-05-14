@@ -227,7 +227,12 @@ def compare_results(result_df, comparison_file):
     result_df = result_df.reset_index(drop=True)
 
     # Load the comparison file, ensuring the first column isn't taken as an index
-    comparison_df = pd.read_csv(comparison_file, index_col=False, dtype=str)  # Read everything as string initially
+    comparison_df = pd.read_csv(
+        comparison_file, 
+        index_col=False, 
+        skiprows=1,
+        header=None,
+        dtype=str)  # Read everything as string initially
 
     # Manually map result_df columns to the correct columns in comparison_df
     column_mapping = {
