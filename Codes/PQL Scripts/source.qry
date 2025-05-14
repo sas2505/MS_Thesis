@@ -1,8 +1,6 @@
 #PARSER PQL
 
-///#DEFINE file_path 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\Q01\\sensor_6127_processed_t50.csv'
-#DEFINE file_path 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\6223\\sensor_6223_processed.csv'
-///#DEFINE file_path 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Git_backup\\sensor_5887_processed.csv'
+#DEFINE file_path 'E:\\Personal_Drive_Backup\\My Important Files\\Study\\Uni-Bamberg\\Thesis\\Odysseus\\Benchmarking\\Dataset\\Processed\\5896\\sensor_5896_processed.csv'
 
 #RUNQUERY
 sensor_source ::= ACCESS({
@@ -16,7 +14,6 @@ sensor_source ::= ACCESS({
         ['separator', ','],
         ['delay', '1'],
 		['delayeach', 10000],
-///        ['scheduler.delay', '5'],
         ['skipFirstLines','1']
     ],
     schema = [
