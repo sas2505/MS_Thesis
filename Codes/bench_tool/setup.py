@@ -16,4 +16,7 @@ setup(
             "bench-tool=bench_tool.cli:cli",
         ],
     },
+    author="Md Saiful Ambia Chowdhury",
+    author_email="sas2505@gmail.com",
+    description="A CLI tool for benchmarking and analyzing results of DSMS outputs.",
 )
